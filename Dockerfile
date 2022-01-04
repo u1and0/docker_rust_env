@@ -3,38 +3,30 @@
 
 FROM u1and0/zplug:latest
 
-RUN sudo pacman -Sy --noconfirm archlinux-keyring &&\
-    sudo pacman -Syu --noconfirm &&\
-    : "Discard cache" &&\
-    pacman -Qtdq | xargs -r sudo pacman --noconfirm -Rcns
-
-
 # Install Rust
 RUN : "Setup Rust" &&\
     curl -sSf https://sh.rustup.rs | sh -s -- -y
-# ENV PATH="${HOME}/.cargo/bin:$PATH"
-# WORKDIR ${HOME}/.cargo
 
-RUN export PATH="${HOME}/.cargo/bin:$PATH" &&\
+RUN source ${HOME}/.cargo/env &&\
     : "Setup Rust nightly version" &&\
-    rustup update nightly &&\
+    rustup toolchain install nightly-2021-06-07 &&\
+    rustup default nightly-2021-06-07
+RUN source ${HOME}/.cargo/env &&\
     : "Install racer-src" &&\
-    cargo +nightly install racer
-RUN export PATH="${HOME}/.cargo/bin:$PATH" &&\
+    cargo install racer
+RUN source ${HOME}/.cargo/env &&\
     : "Install Rust Language Server" &&\
-    rustup component add rls \
-                         rust-analysis \
-                         rust-src &&\
-    : "Install racer-src" &&\
-    rustup default nightly &&\
-    cargo install cargo-edit
+    rustup component add rust-analysis \
+                         rust-src
+# rls install tips [Nightly Rustにおいて、RLSがrustupコマンドでインストールできない時に代わりに探してくれるツール(cargo-rls-install)を作った](https://qiita.com/s4i/items/0538f7fe4874980ccf27)
+RUN source ${HOME}/.cargo/env &&\
+    : "Install rls Rust Language Server" &&\
+    cargo install cargo-rls-install \
+                  cargo-edit &&\
+    cargo rls-install -y
 #RUN :"Install rust-doc" &&\
     # curl -fsSL https://static.rust-lang.org/dist/rust-1.0.0-i686-unknown-linux-gnu.tar.gz | tar -xz
 
-ARG LOUSER=u1and0
-USER ${LOUSER}
-WORKDIR /home/${LOUSER}
-
 LABEL maintainer="u1and0 <e01.ando60@gmail.com>"\
       description="rust lang env with neovim"\
-      version="rust:v0.2.0"
+      version="rust:v1.0.0"
